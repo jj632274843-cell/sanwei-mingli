@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>三维命理 · SANWEI MINGLI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Noto+Serif+SC:wght@300;400&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Noto+Serif+SC:wght@300;400&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet"></noscript>
+<style>
+:root {
+  --gold: #d4b070;
+  --gold-bright: #ecd48e;
+  --gold-dim: rgba(212,176,112,0.45);
+  --ink: #0e0c0a;
+  --ink-2: #171410;
+  --paper: #f8f0e0;
+  --paper-dim: rgba(248,240,224,0.72);
+  --paper-faint: rgba(248,240,224,0.25);
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--ink);
+  color: var(--paper);
+  font-family: 'Noto Serif SC', serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+  cursor: none;
+}
+
+/* 触摸设备恢复正常cursor，修复点击问题 */
+@media (hover: none) and (pointer: coarse) {
+  body, a, button { cursor: auto !important; }
+  #cursor, #cursor-ring { display: none !important; }
+}
+
+/* ── CUSTOM CURSOR ── */
+#cursor {
+  position: fixed;
+  width: 8px; height: 8px;
+  background: var(--gold);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 9999;
+  transform: translate(-50%, -50%);
+  transition: transform 0.1s, width 0.3s, height 0.3s, opacity 0.3s;
+  mix-blend-mode: screen;
+}
+#cursor-ring {
+  position: fixed;
+  width: 32px; height: 32px;
+  border: 1px solid var(--gold-dim);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 9998;
+  transform: translate(-50%, -50%);
+  transition: transform 0.15s ease-out, width 0.3s, height 0.3s, opacity 0.3s;
+}
+body:hover #cursor { opacity: 1; }
+
+/* ── CANVAS ── */
+#starfield {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* ── NAV ── */
+nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 40px;
+  border-bottom: 1px solid var(--gold-dim);
+  backdrop-filter: blur(12px);
+  background: rgba(14,12,10,0.75);
+}
+
+.nav-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.logo-mark {
+  width: 36px; height: 36px;
+  border: 1px solid var(--gold);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+.logo-mark::before {
+  content: '';
+  position: absolute;
+  width: 24px; height: 24px;
+  border: 1px solid rgba(201,169,106,0.4);
+  border-radius: 50%;
+}
+.logo-dot {
+  width: 5px; height: 5px;
+  background: var(--gold);
+  border-radius: 50%;
+}
+.logo-text {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  letter-spacing: 0.2em;
+  color: var(--gold);
+  line-height: 1.4;
+}
+.logo-sub {
+  font-family: 'Noto Serif SC', serif;
+  font-size: 10px;
+  color: var(--paper-dim);
+  letter-spacing: 0.3em;
+}
+
+.nav-links {
+  display: flex;
+  gap: 32px;
+  list-style: none;
+}
+.nav-links a {
+  font-size: 12px;
+  letter-spacing: 0.2em;
+  color: var(--paper-dim);
+  text-decoration: none;
+  transition: color 0.3s;
+}
+.nav-links a:hover { color: var(--gold); }
+
+.nav-cta {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 13px;
+  letter-spacing: 0.15em;
+  color: var(--gold);
+  border: 1px solid var(--gold-dim);
+  padding: 8px 20px;
+  text-decoration: none;
+  transition: all 0.3s;
+  background: transparent;
+  cursor: none;
+}
+.nav-cta:hover {
+  background: rgba(201,169,106,0.08);
+  border-color: var(--gold);
+}
+
+@media (max-width: 768px) {
+  nav { padding: 16px 20px; }
+  .nav-links { display: none; }
+  .logo-text { font-size: 11px; }
+}
+
+/* ── HERO ── */
+#hero {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 100px 24px 60px;
+}
+
+.hero-tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.35em;
+  color: var(--gold);
+  opacity: 0.7;
+  margin-bottom: 32px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.hero-tag::before, .hero-tag::after {
+  content: '';
+  width: 40px;
+  height: 1px;
+  background: var(--gold-dim);
+}
+
+.celestial-ring {
+  position: relative;
+  width: min(420px, 85vw);
+  height: min(420px, 85vw);
+  margin: 0 auto 40px;
+}
+.celestial-ring svg {
+  width: 100%; height: 100%;
+  animation: ring-spin 60s linear infinite;
+}
+@keyframes ring-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.ring-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  animation: none;
+}
+.hero-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic;
+  font-weight: 300;
+  font-size: clamp(28px, 5vw, 52px);
+  color: var(--paper);
+  line-height: 1.2;
+  letter-spacing: 0.04em;
+}
+.hero-title-zh {
+  font-family: 'Noto Serif SC', serif;
+  font-weight: 300;
+  font-size: clamp(13px, 2vw, 16px);
+  color: var(--gold);
+  letter-spacing: 0.4em;
+  margin-top: 8px;
+}
+
+.hero-desc {
+  font-size: clamp(13px, 2.2vw, 15px);
+  color: var(--paper-dim);
+  line-height: 2;
+  letter-spacing: 0.08em;
+  max-width: 480px;
+  margin: 0 auto 12px;
+}
+.hero-desc-en {
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic;
+  font-size: clamp(12px, 1.8vw, 14px);
+  color: rgba(201,169,106,0.5);
+  line-height: 1.8;
+  max-width: 480px;
+  margin: 0 auto 40px;
+}
+
+.hero-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 15px;
+  letter-spacing: 0.2em;
+  color: var(--gold);
+  border: 1px solid var(--gold-dim);
+  padding: 14px 36px;
+  text-decoration: none;
+  transition: all 0.4s;
+  position: relative;
+  overflow: hidden;
+  cursor: none;
+}
+.hero-cta::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(201,169,106,0.06);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.4s ease;
+}
+.hero-cta:hover::before { transform: scaleX(1); }
+.hero-cta:hover { border-color: var(--gold); letter-spacing: 0.28em; }
+.hero-cta-arrow { transition: transform 0.3s; }
+.hero-cta:hover .hero-cta-arrow { transform: translateX(4px); }
+
+.scroll-hint {
+  position: absolute;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  opacity: 0.4;
+  animation: float 2.5s ease-in-out infinite;
+}
+@keyframes float {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50% { transform: translateX(-50%) translateY(-6px); }
+}
+.scroll-line {
+  width: 1px; height: 32px;
+  background: linear-gradient(to bottom, transparent, var(--gold));
+}
+.scroll-hint span {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.3em;
+  color: var(--gold);
+}
+
+/* ── MODULES SECTION ── */
+#modules {
+  position: relative;
+  z-index: 1;
+  padding: 80px 40px 100px;
+}
+
+.section-header {
+  text-align: center;
+  margin-bottom: 60px;
+}
+.section-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.4em;
+  color: var(--gold);
+  opacity: 0.6;
+  margin-bottom: 16px;
+}
+.section-title {
+  font-size: clamp(22px, 4vw, 36px);
+  font-weight: 300;
+  letter-spacing: 0.2em;
+  color: var(--paper);
+}
+.section-title-en {
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic;
+  font-size: clamp(13px, 2vw, 16px);
+  color: rgba(201,169,106,0.5);
+  margin-top: 8px;
+  letter-spacing: 0.08em;
+}
+
+.modules-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+@media (max-width: 640px) {
+  #modules { padding: 60px 20px 80px; }
+  .modules-grid { grid-template-columns: 1fr; gap: 16px; }
+}
+
+.module-card {
+  position: relative;
+  border: 1px solid rgba(212,176,112,0.28);
+  padding: 32px 28px;
+  background: rgba(255,255,255,0.04);
+  backdrop-filter: blur(8px);
+  transition: all 0.4s ease;
+  cursor: none;
+  overflow: hidden;
+  text-decoration: none;
+  display: block;
+}
+.module-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at top left, rgba(201,169,106,0.07), transparent 60%);
+  opacity: 0;
+  transition: opacity 0.4s;
+}
+.module-card::after {
+  content: '';
+  position: absolute;
+  top: -1px; left: -1px;
+  width: 20px; height: 20px;
+  border-top: 1px solid var(--gold);
+  border-left: 1px solid var(--gold);
+  transition: all 0.4s;
+}
+.module-card:hover { border-color: rgba(201,169,106,0.5); transform: translateY(-3px); }
+.module-card:hover::before { opacity: 1; }
+.module-card:hover::after { width: 32px; height: 32px; }
+
+.card-number {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--gold);
+  opacity: 0.5;
+  letter-spacing: 0.2em;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.card-icon {
+  width: 40px; height: 40px;
+  border: 1px solid rgba(201,169,106,0.3);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
+  transition: border-color 0.3s;
+}
+.module-card:hover .card-icon { border-color: var(--gold); }
+
+.card-title {
+  font-size: clamp(18px, 3vw, 22px);
+  font-weight: 300;
+  letter-spacing: 0.1em;
+  color: var(--paper);
+  margin-bottom: 6px;
+}
+.card-title-en {
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic;
+  font-size: 12px;
+  color: rgba(201,169,106,0.6);
+  margin-bottom: 16px;
+  letter-spacing: 0.05em;
+}
+.card-desc {
+  font-size: 13px;
+  color: var(--paper-dim);
+  line-height: 1.9;
+  letter-spacing: 0.04em;
+}
+.card-tags {
+  display: flex;
+  gap: 8px;
+  margin-top: 20px;
+  flex-wrap: wrap;
+}
+.card-tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.15em;
+  color: rgba(201,169,106,0.5);
+}
+.card-cta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(201,169,106,0.12);
+  font-family: 'Cormorant Garamond', serif;
+  font-style: italic;
+  font-size: 14px;
+  color: var(--gold);
+  opacity: 0;
+  transform: translateY(4px);
+  transition: all 0.3s;
+}
+.module-card:hover .card-cta { opacity: 1; transform: translateY(0); }
+
+/* ── FOOTER ── */
+footer {
+  position: relative;
+  z-index: 1;
+  border-top: 1px solid var(--gold-dim);
+  padding: 32px 40px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: gap;
+}
+.footer-copy {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--paper-faint);
+  letter-spacing: 0.15em;
+}
+.footer-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: rgba(201,169,106,0.4);
+  letter-spacing: 0.15em;
+}
+.status-dot {
+  width: 5px; height: 5px;
+  background: #4a9e6e;
+  border-radius: 50%;
+  animation: pulse 2.5s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+@media (max-width: 640px) {
+  footer { padding: 24px 20px; flex-direction: column; gap: 12px; text-align: center; }
+}
+
+/* ── TOAST ── */
+  .toast {
+    position: fixed; bottom: 32px; left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: rgba(14,12,10,.95); border: 1px solid var(--gold);
+    color: var(--gold); padding: 11px 28px;
+    font-size: 12px; letter-spacing: .15em;
+    transition: transform .4s cubic-bezier(.2,.9,.3,1);
+    z-index: 9990; pointer-events: none;
+    white-space: nowrap;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+/* ── RIPPLE ── */
+.ripple {
+  position: fixed;
+  border-radius: 50%;
+  border: 1px solid var(--gold);
+  pointer-events: none;
+  z-index: 9997;
+  animation: ripple-out 0.8s ease-out forwards;
+}
+@keyframes ripple-out {
+  from { width: 0; height: 0; opacity: 0.6; transform: translate(-50%, -50%); }
+  to { width: 80px; height: 80px; opacity: 0; transform: translate(-50%, -50%); }
+}
+
+/* ── FADE IN ── */
+.fade-up {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.7s ease, transform 0.7s ease;
+}
+.fade-up.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+</style>
+</head>
+<body>
+
+<canvas id="starfield"></canvas>
+<div id="cursor"></div>
+<div id="cursor-ring"></div>
+
+<nav>
+  <div class="nav-logo">
+    <div class="logo-mark"><div class="logo-dot"></div></div>
+    <div>
+      <div class="logo-text">SANWEI · MINGLI</div>
+      <div class="logo-sub">三 · 维 · 命 · 理</div>
+    </div>
+  </div>
+  <ul class="nav-links">
+    <li><a href="#modules">命理画像</a></li>
+    <li><a href="#modules">理想栖居</a></li>
+    <li><a href="#modules">契合之镜</a></li>
+    <li><a href="#modules">十六映射</a></li>
+  </ul>
+  <a href="#modules" class="nav-cta">开始探索 · Enter</a>
+</nav>
+
+<section id="hero">
+  <div class="hero-tag">EASTERN ASTROLOGY · WESTERN ARCHETYPE · VEDIC STARS</div>
+
+  <div class="celestial-ring">
+    <svg viewBox="0 0 400 400" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="200" cy="200" r="190" stroke="#c9a96a" stroke-width="0.8" stroke-opacity="0.3"/>
+      <circle cx="200" cy="200" r="170" stroke="#c9a96a" stroke-width="0.5" stroke-opacity="0.2" stroke-dasharray="2 8"/>
+      <circle cx="200" cy="200" r="140" stroke="#c9a96a" stroke-width="0.8" stroke-opacity="0.35"/>
+      <circle cx="200" cy="200" r="110" stroke="#c9a96a" stroke-width="0.5" stroke-opacity="0.2" stroke-dasharray="1 4"/>
+      <circle cx="200" cy="200" r="80" stroke="#c9a96a" stroke-width="0.8" stroke-opacity="0.3"/>
+      <circle cx="200" cy="200" r="50" stroke="#c9a96a" stroke-width="0.5" stroke-opacity="0.25"/>
+      <line x1="10" y1="200" x2="390" y2="200" stroke="#c9a96a" stroke-width="0.5" stroke-opacity="0.2"/>
+      <line x1="200" y1="10" x2="200" y2="390" stroke="#c9a96a" stroke-width="0.5" stroke-opacity="0.2"/>
+      <line x1="66" y1="66" x2="334" y2="334" stroke="#c9a96a" stroke-width="0.4" stroke-opacity="0.15"/>
+      <line x1="334" y1="66" x2="66" y2="334" stroke="#c9a96a" stroke-width="0.4" stroke-opacity="0.15"/>
+      <polygon points="200,30 230,170 390,200 230,230 200,370 170,230 10,200 170,170" stroke="#c9a96a" stroke-width="0.5" stroke-opacity="0.25" fill="none"/>
+      <polygon points="200,80 218,182 320,200 218,218 200,320 182,218 80,200 182,182" stroke="#c9a96a" stroke-width="0.5" stroke-opacity="0.2" fill="none"/>
+      <circle cx="200" cy="200" r="3" fill="#c9a96a" fill-opacity="0.8"/>
+      <circle cx="200" cy="30" r="2" fill="#c9a96a" fill-opacity="0.5"/>
+      <circle cx="200" cy="370" r="2" fill="#c9a96a" fill-opacity="0.5"/>
+      <circle cx="30" cy="200" r="2" fill="#c9a96a" fill-opacity="0.5"/>
+      <circle cx="370" cy="200" r="2" fill="#c9a96a" fill-opacity="0.5"/>
+    </svg>
+    <div class="ring-center">
+      <div class="hero-title">The Observatory<br>of the Self</div>
+      <div class="hero-title-zh">三 维 命 理</div>
+    </div>
+  </div>
+
+  <p class="hero-desc">以八字承古法之脉，以印度占星照命盘之星，<br>以人格映射观心之所向。于三维之间，见你自己。</p>
+  <p class="hero-desc-en">Where Bazi, Vedic stars, and modern psyche converge —<br>a luminous map of who you are.</p>
+
+  <a href="#modules" class="hero-cta">
+    开始探索
+    <span class="hero-cta-arrow">→</span>
+  </a>
+
+  <div class="scroll-hint">
+    <div class="scroll-line"></div>
+    <span>DESCEND</span>
+  </div>
+</section>
+
+<section id="modules">
+  <div class="section-header fade-up">
+    <div class="section-label">FOUR · PORTALS</div>
+    <div class="section-title">四种了解自己的方式</div>
+    <div class="section-title-en">Four Chambers of Inquiry</div>
+  </div>
+
+  <div class="modules-grid">
+
+    <a href="sanwei_portrait.html" class="module-card fade-up" style="transition-delay: 0.1s">
+      <div class="card-number">
+        <span>01 / 三维</span>
+        <div class="card-icon">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+            <polygon points="9,2 16,13 2,13" stroke="#c9a96a" stroke-width="1" fill="none"/>
+            <circle cx="9" cy="9" r="2" fill="#c9a96a" fill-opacity="0.6"/>
+          </svg>
+        </div>
+      </div>
+      <div class="card-title">三维命理画像</div>
+      <div class="card-title-en">Trinitas Natalis</div>
+      <div class="card-desc">用八字、印度占星、MBTI三个维度交叉分析你是谁——不是算命，是帮你把一直模糊感知到的自己说清楚。</div>
+      <div class="card-tags">
+        <span class="card-tag">BAZI</span>
+        <span class="card-tag">·</span>
+        <span class="card-tag">JYOTISH</span>
+        <span class="card-tag">·</span>
+        <span class="card-tag">PSYCHE</span>
+      </div>
+      <div class="card-cta">进入画像 →</div>
+    </a>
+
+    <a href="#" class="module-card fade-up" style="transition-delay: 0.2s" onclick="toast('即将上线，敬请期待 ✦');return false;">
+      <div class="card-number">
+        <span>02 / 栖居</span>
+        <div class="card-icon">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+            <circle cx="9" cy="9" r="7" stroke="#c9a96a" stroke-width="1"/>
+            <line x1="9" y1="2" x2="9" y2="16" stroke="#c9a96a" stroke-width="0.8"/>
+            <line x1="2" y1="9" x2="16" y2="9" stroke="#c9a96a" stroke-width="0.8"/>
+            <ellipse cx="9" cy="9" rx="4" ry="7" stroke="#c9a96a" stroke-width="0.8"/>
+          </svg>
+        </div>
+      </div>
+      <div class="card-title">适合你的城市</div>
+      <div class="card-title-en">Terra Propitia</div>
+      <div class="card-desc">根据你的八字五行，找到与你气场、节律、能量最匹配的城市——让环境顺势而不是逆势。</div>
+      <div class="card-tags">
+        <span class="card-tag">五行</span>
+        <span class="card-tag">·</span>
+        <span class="card-tag">GEOMANCY</span>
+      </div>
+      <div class="card-cta">绘制地图 →</div>
+    </a>
+
+    <a href="#" class="module-card fade-up" style="transition-delay: 0.3s" onclick="toast('即将上线，敬请期待 ✦');return false;">
+      <div class="card-number">
+        <span>03 / 契合</span>
+        <div class="card-icon">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+            <circle cx="6" cy="9" r="4.5" stroke="#c9a96a" stroke-width="1"/>
+            <circle cx="12" cy="9" r="4.5" stroke="#c9a96a" stroke-width="1"/>
+          </svg>
+        </div>
+      </div>
+      <div class="card-title">八字相处契合度</div>
+      <div class="card-title-en">Consonantia Duorum</div>
+      <div class="card-desc">两张命盘放在一起，看你们天然呼应、互补还是相克的地方，读懂彼此相处的底层频率。</div>
+      <div class="card-tags">
+        <span class="card-tag">SYNASTRY</span>
+        <span class="card-tag">·</span>
+        <span class="card-tag">合盘</span>
+      </div>
+      <div class="card-cta">交叉解读 →</div>
+    </a>
+
+    <a href="#" class="module-card fade-up" style="transition-delay: 0.4s" onclick="toast('即将上线，敬请期待 ✦');return false;">
+      <div class="card-number">
+        <span>04 / 映射</span>
+        <div class="card-icon">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+            <rect x="2" y="2" width="6" height="6" stroke="#c9a96a" stroke-width="1"/>
+            <rect x="10" y="2" width="6" height="6" stroke="#c9a96a" stroke-width="1"/>
+            <rect x="2" y="10" width="6" height="6" stroke="#c9a96a" stroke-width="1"/>
+            <rect x="10" y="10" width="6" height="6" stroke="#c9a96a" stroke-width="1"/>
+          </svg>
+        </div>
+      </div>
+      <div class="card-title">MBTI 深度解析</div>
+      <div class="card-title-en">Sedecim Animae</div>
+      <div class="card-desc">十六种人格不是标签，把你的MBTI放进命盘里，看东方命理和西方心理学在你身上如何共鸣。</div>
+      <div class="card-tags">
+        <span class="card-tag">16 TYPES</span>
+        <span class="card-tag">·</span>
+        <span class="card-tag">心理映射</span>
+      </div>
+      <div class="card-cta">打开映射 →</div>
+    </a>
+
+  </div>
+</section>
+
+<footer>
+  <div class="footer-copy">© MMXXVI · 三维命理 · SANWEI MINGLI</div>
+  <div class="footer-status">
+    <div class="status-dot"></div>
+    OBSERVATORY ONLINE
+  </div>
+</footer>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── TOAST ──
+function toast(msg, dur=2400){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),dur);
+}
+
+// ── STARFIELD ──
+const canvas = document.getElementById('starfield');
+const ctx = canvas.getContext('2d');
+let W, H, stars = [], mouse = { x: 0, y: 0 };
+
+function resize() {
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+}
+
+function initStars() {
+  stars = [];
+  const count = Math.floor((W * H) / 4000);
+  for (let i = 0; i < count; i++) {
+    stars.push({
+      x: Math.random() * W,
+      y: Math.random() * H,
+      r: Math.random() * 2.2 + 0.3,
+      glow: Math.random() > 0.75,
+      glowR: Math.random() * 24 + 10,
+      alpha: Math.random() * 0.75 + 0.2,
+      speed: Math.random() * 0.15 + 0.02,
+      drift: (Math.random() - 0.5) * 0.3,
+      twinkle: Math.random() * Math.PI * 2,
+      twinkleSpeed: Math.random() * 0.02 + 0.005
+    });
+  }
+}
+
+function drawStars(t) {
+  ctx.clearRect(0, 0, W, H);
+  const mx = mouse.x / W - 0.5;
+  const my = mouse.y / H - 0.5;
+
+  stars.forEach(s => {
+    s.twinkle += s.twinkleSpeed;
+    const alpha = s.alpha * (0.65 + 0.35 * Math.sin(s.twinkle));
+
+    if (s.glow) {
+      const g = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, s.glowR);
+      g.addColorStop(0, `rgba(212,176,112,${alpha * 0.55})`);
+      g.addColorStop(1, 'rgba(212,176,112,0)');
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.glowR, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(248,240,224,${alpha})`;
+    ctx.fill();
+
+    s.x += s.drift + mx * s.speed * 2;
+    s.y -= s.speed + my * s.speed * 2;
+    if (s.y < -5) s.y = H + 5;
+    if (s.x < -5) s.x = W + 5;
+    if (s.x > W + 5) s.x = -5;
+  });
+
+  requestAnimationFrame(drawStars);
+}
+
+resize();
+initStars();
+drawStars();
+window.addEventListener('resize', () => { resize(); initStars(); });
+
+// ── MOUSE / CURSOR ──
+const cur = document.getElementById('cursor');
+const ring = document.getElementById('cursor-ring');
+const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+
+if (!isTouchDevice) {
+  let cx = 0, cy = 0, rx = 0, ry = 0;
+  document.addEventListener('mousemove', e => {
+    cx = e.clientX; cy = e.clientY;
+    mouse.x = e.clientX; mouse.y = e.clientY;
+  });
+  function animCursor() {
+    rx += (cx - rx) * 0.12; ry += (cy - ry) * 0.12;
+    cur.style.left = cx + 'px'; cur.style.top = cy + 'px';
+    ring.style.left = rx + 'px'; ring.style.top = ry + 'px';
+    requestAnimationFrame(animCursor);
+  }
+  animCursor();
+  document.querySelectorAll('a, button').forEach(el => {
+    el.addEventListener('mouseenter', () => {
+      cur.style.width = '12px'; cur.style.height = '12px';
+      ring.style.width = '48px'; ring.style.height = '48px';
+    });
+    el.addEventListener('mouseleave', () => {
+      cur.style.width = '8px'; cur.style.height = '8px';
+      ring.style.width = '32px'; ring.style.height = '32px';
+    });
+  });
+} else {
+  document.body.style.cursor = 'auto';
+  if (cur) cur.style.display = 'none';
+  if (ring) ring.style.display = 'none';
+}
+
+// ── CLICK RIPPLE ──
+document.addEventListener('click', e => {
+  const r = document.createElement('div');
+  r.className = 'ripple';
+  r.style.left = e.clientX + 'px';
+  r.style.top = e.clientY + 'px';
+  document.body.appendChild(r);
+  setTimeout(() => r.remove(), 800);
+});
+
+// ── SCROLL FADE IN ──
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      e.target.classList.add('visible');
+      observer.unobserve(e.target);
+    }
+  });
+}, { threshold: 0.15 });
+
+document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
+</script>
+</body>
+</html>

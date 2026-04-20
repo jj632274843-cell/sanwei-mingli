@@ -1,0 +1,1272 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>三维命理画像 · SANWEI MINGLI</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Noto+Serif+SC:wght@300;400&family=JetBrains+Mono:wght@400&display=swap&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Noto+Serif+SC:wght@300;400&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet"></noscript>
+<style>
+:root {
+  --gold: #d4b070;
+  --gold-bright: #ecd48e;
+  --gold-dim: rgba(212,176,112,0.4);
+  --ink: #0e0c0a;
+  --paper: #f8f0e0;
+  --paper-dim: rgba(248,240,224,0.65);
+  --paper-faint: rgba(248,240,224,0.18);
+  --crimson: #8b3a35;
+  --jade: #3a6b50;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--ink);
+  color: var(--paper);
+  font-family: 'Noto Serif SC', serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+  cursor: none;
+}
+/* 触摸设备恢复正常cursor，修复手机点击问题 */
+@media (hover: none) and (pointer: coarse) {
+  body, a, button, input, select, textarea { cursor: auto !important; }
+  #cursor, #cursor-ring { display: none !important; }
+}
+#cursor { position:fixed; width:8px; height:8px; background:var(--gold); border-radius:50%; pointer-events:none; z-index:9999; transform:translate(-50%,-50%); mix-blend-mode:screen; transition: width .3s, height .3s; }
+#cursor-ring { position:fixed; width:32px; height:32px; border:1px solid var(--gold-dim); border-radius:50%; pointer-events:none; z-index:9998; transform:translate(-50%,-50%); transition: width .3s, height .3s; }
+#starfield { position:fixed; inset:0; z-index:0; pointer-events:none; }
+.ripple { position:fixed; border-radius:50%; border:1px solid var(--gold); pointer-events:none; z-index:9997; animation:ripple-out .8s ease-out forwards; }
+@keyframes ripple-out { from{width:0;height:0;opacity:.6;transform:translate(-50%,-50%)} to{width:80px;height:80px;opacity:0;transform:translate(-50%,-50%)} }
+
+/* ── NAV ── */
+nav {
+  position: fixed; top:0; left:0; right:0; z-index:100;
+  display: flex; align-items:center; justify-content:space-between;
+  padding: 18px 40px;
+  border-bottom: 1px solid var(--gold-dim);
+  backdrop-filter: blur(14px);
+  background: rgba(14,12,10,0.8);
+}
+.nav-back {
+  display: flex; align-items:center; gap:10px;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 13px; letter-spacing:.15em;
+  color: var(--gold); text-decoration:none;
+  transition: gap .3s; cursor:none;
+}
+.nav-back:hover { gap:14px; }
+.nav-title {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; letter-spacing:.25em; color:var(--paper-dim);
+}
+.nav-step {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px; letter-spacing:.2em; color:var(--gold); opacity:.6;
+}
+@media(max-width:640px){ nav { padding:14px 18px; } .nav-title{display:none;} }
+
+/* ── MAIN LAYOUT ── */
+main {
+  position: relative; z-index:1;
+  max-width: 780px; margin:0 auto;
+  padding: 110px 40px 100px;
+}
+@media(max-width:640px){ main { padding: 90px 20px 80px; } }
+
+/* ── PAGE HEADER ── */
+.page-header { text-align:center; margin-bottom:60px; }
+.page-label {
+  font-family:'JetBrains Mono',monospace;
+  font-size:10px; letter-spacing:.4em; color:var(--gold); opacity:.6; margin-bottom:14px;
+}
+.page-title {
+  font-size: clamp(24px,4vw,38px); font-weight:300; letter-spacing:.18em; color:var(--paper); margin-bottom:8px;
+}
+.page-title-en {
+  font-family:'Cormorant Garamond',serif; font-style:italic;
+  font-size: clamp(13px,2vw,16px); color:rgba(212,176,112,.5); letter-spacing:.06em;
+}
+.page-divider {
+  display:flex; align-items:center; gap:14px; justify-content:center; margin-top:24px;
+}
+.page-divider::before,.page-divider::after { content:''; flex:1; max-width:80px; height:1px; background:var(--gold-dim); }
+.page-divider span { font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:.3em; color:var(--gold); opacity:.5; }
+
+/* ── PROGRESS BAR ── */
+.progress-wrap { margin-bottom:48px; }
+.progress-steps {
+  display:flex; justify-content:space-between; margin-bottom:14px;
+}
+.step-dot {
+  display:flex; flex-direction:column; align-items:center; gap:6px; cursor:pointer;
+}
+.step-circle {
+  width:28px; height:28px; border-radius:50%;
+  border:1px solid rgba(212,176,112,.3);
+  display:flex; align-items:center; justify-content:center;
+  font-family:'JetBrains Mono',monospace; font-size:10px;
+  color:var(--paper-dim); transition:all .3s;
+}
+.step-dot.active .step-circle { border-color:var(--gold); color:var(--gold); background:rgba(212,176,112,.08); }
+.step-dot.done .step-circle { border-color:var(--gold); background:var(--gold); color:var(--ink); }
+.step-label { font-size:10px; letter-spacing:.15em; color:var(--paper-dim); }
+.step-dot.active .step-label { color:var(--gold); }
+.progress-line {
+  height:1px; background:rgba(212,176,112,.12); position:relative; margin:0 14px;
+}
+.progress-fill {
+  position:absolute; top:0; left:0; height:100%;
+  background:var(--gold); transition:width .5s ease;
+}
+@media(max-width:480px){ .step-label{display:none;} }
+
+/* ── FORM SECTIONS ── */
+.form-section { display:none; }
+.form-section.active { display:block; animation:fadeSlide .4s ease; }
+@keyframes fadeSlide { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+
+.section-card {
+  background:rgba(255,255,255,.035); border:1px solid rgba(212,176,112,.2);
+  padding:32px; margin-bottom:20px; position:relative;
+}
+.section-card::before {
+  content:''; position:absolute; top:-1px; left:-1px;
+  width:16px; height:16px; border-top:1px solid var(--gold); border-left:1px solid var(--gold);
+}
+.section-card-title {
+  font-size:12px; letter-spacing:.3em; color:var(--gold); margin-bottom:24px;
+  padding-bottom:14px; border-bottom:1px dashed rgba(212,176,112,.2);
+  display:flex; align-items:center; gap:10px;
+}
+.section-card-title::before { content:'◆'; color:rgba(212,176,112,.4); font-size:8px; }
+
+.field { margin-bottom:20px; }
+.field:last-child { margin-bottom:0; }
+label {
+  display:block; font-size:11px; letter-spacing:.2em;
+  color:var(--paper-dim); margin-bottom:8px; text-transform:uppercase;
+}
+label span { color:var(--gold); margin-left:4px; }
+
+input, select, textarea {
+  width:100%; background:rgba(14,12,10,.8);
+  border:1px solid rgba(212,176,112,.2); color:var(--paper);
+  padding:11px 14px; font-family:'Noto Serif SC',serif; font-size:14px;
+  transition:all .25s; outline:none; -webkit-appearance:none;
+  -webkit-text-fill-color: var(--paper);
+}
+input:focus, select:focus, textarea:focus {
+  border-color:var(--gold);
+  box-shadow:0 0 0 1px rgba(212,176,112,.15) inset;
+  background:rgba(14,12,10,.9);
+}
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px rgba(14,12,10,.95) inset !important;
+  -webkit-text-fill-color: var(--paper) !important;
+  background-color: rgba(14,12,10,.95) !important;
+  caret-color: var(--paper);
+}
+textarea { resize:vertical; min-height:80px; }
+select {
+  background-image:url("data:image/svg+xml,%3Csvg width='10' height='6' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23d4b070' fill='none'/%3E%3C/svg%3E");
+  background-repeat:no-repeat; background-position:right 14px center; padding-right:36px;
+}
+select option { background:#1a1610; }
+
+.field-row { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+@media(max-width:480px){ .field-row { grid-template-columns:1fr; } }
+
+/* MBTI tags */
+.mbti-wrap {
+  background:rgba(14,12,10,.8); border:1px solid rgba(212,176,112,.2);
+  padding:8px 10px; min-height:44px; display:flex; flex-wrap:wrap; gap:6px; align-items:center;
+  transition:border-color .25s; cursor:text;
+}
+.mbti-wrap:focus-within { border-color:var(--gold); box-shadow:0 0 0 1px rgba(212,176,112,.15) inset; }
+.mbti-tag {
+  display:inline-flex; align-items:center; gap:6px;
+  background:rgba(212,176,112,.1); border:1px solid rgba(212,176,112,.35);
+  color:var(--gold-bright); padding:3px 4px 3px 10px;
+  font-family:'JetBrains Mono',monospace; font-size:12px; letter-spacing:.08em;
+  animation:tagIn .2s ease;
+}
+@keyframes tagIn { from{opacity:0;transform:scale(.8)} to{opacity:1;transform:scale(1)} }
+.mbti-tag button { background:none; border:none; color:var(--paper-dim); cursor:none; font-size:12px; padding:0 4px; line-height:1; transition:color .2s; }
+.mbti-tag button:hover { color:var(--crimson); }
+.mbti-input {
+  flex:1; min-width:90px; background:transparent; border:none;
+  color:var(--paper); font-family:'JetBrains Mono',monospace; font-size:13px;
+  padding:4px 6px; outline:none; text-transform:uppercase; letter-spacing:.08em; cursor:text;
+}
+.mbti-input::placeholder { color:var(--paper-dim); font-style:italic; text-transform:none; font-size:12px; letter-spacing:.04em; }
+
+.field-hint { font-size:10px; color:var(--paper-dim); margin-top:5px; font-style:italic; letter-spacing:.04em; }
+
+/* Bazi display */
+.bazi-display {
+  display:none; margin-top:20px; padding:20px;
+  background:rgba(14,12,10,.6); border:1px solid rgba(212,176,112,.15);
+}
+.bazi-display.active { display:block; animation:fadeSlide .3s ease; }
+.bazi-pillars { display:grid; grid-template-columns:repeat(4,1fr); gap:2px; background:rgba(212,176,112,.08); margin-bottom:14px; }
+.pillar { background:var(--ink); padding:14px 8px; text-align:center; }
+.pillar .p-label { font-size:9px; color:rgba(212,176,112,.5); letter-spacing:.2em; margin-bottom:10px; }
+.pillar .p-gan { font-size:24px; font-weight:300; color:var(--paper); line-height:1.2; }
+.pillar .p-gan.day { color:var(--gold-bright); }
+.pillar .p-zhi { font-size:21px; font-weight:300; color:var(--paper-dim); }
+.bazi-meta {
+  display:flex; justify-content:space-between;
+  font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--paper-dim);
+  padding-top:10px; border-top:1px dashed rgba(212,176,112,.15);
+}
+.bazi-meta .dm { color:var(--gold); }
+
+/* Geo chip */
+.geo-chip { display:none; margin-top:10px; padding:10px 14px; background:rgba(14,12,10,.7); border-left:2px solid var(--gold); font-family:'JetBrains Mono',monospace; font-size:11px; }
+.geo-chip.active { display:block; }
+.geo-chip .addr { color:var(--gold); margin-bottom:3px; font-size:10px; }
+.geo-chip .coord { color:var(--paper-dim); }
+.geo-chip.error { border-left-color:var(--crimson); }
+
+/* Buttons */
+.btn-primary {
+  background:var(--gold); color:var(--ink); border:none;
+  padding:14px 32px; font-family:'Noto Serif SC',serif;
+  font-weight:400; font-size:13px; letter-spacing:.25em;
+  cursor:none; transition:all .25s; width:100%; margin-top:8px;
+}
+.btn-primary:hover { background:var(--gold-bright); letter-spacing:.32em; }
+.btn-primary:disabled { background:rgba(212,176,112,.25); color:var(--paper-dim); cursor:not-allowed; letter-spacing:.25em; }
+
+.btn-ghost {
+  background:transparent; color:var(--gold);
+  border:1px solid rgba(212,176,112,.35);
+  padding:12px 24px; font-family:'Noto Serif SC',serif;
+  font-size:13px; letter-spacing:.2em; cursor:none; transition:all .25s;
+}
+.btn-ghost:hover { border-color:var(--gold); background:rgba(212,176,112,.05); }
+
+.btn-row { display:flex; gap:12px; margin-top:28px; }
+.btn-row .btn-ghost { flex:1; }
+.btn-row .btn-primary { flex:2; margin-top:0; }
+
+.spinner { display:inline-block; width:12px; height:12px; border:1.5px solid rgba(212,176,112,.3); border-top-color:var(--gold); border-radius:50%; animation:spin .8s linear infinite; margin-right:8px; vertical-align:middle; }
+@keyframes spin { to{transform:rotate(360deg)} }
+
+/* ── REPORT ── */
+#report-section { display:none; }
+#report-section.active { display:block; animation:fadeSlide .5s ease; }
+
+.report-header {
+  text-align:center; padding:48px 0 40px;
+  border-bottom:1px solid rgba(212,176,112,.15); margin-bottom:48px;
+}
+.report-name {
+  font-size:clamp(20px,3.5vw,30px); font-weight:300; letter-spacing:.25em; color:var(--paper); margin-bottom:6px;
+}
+.report-subtitle {
+  font-family:'Cormorant Garamond',serif; font-style:italic;
+  font-size:14px; color:rgba(212,176,112,.6); letter-spacing:.08em; margin-bottom:20px;
+}
+.report-tags { display:flex; gap:16px; justify-content:center; flex-wrap:wrap; }
+.report-tag {
+  font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:.2em;
+  color:var(--gold); border:1px solid rgba(212,176,112,.25); padding:4px 12px;
+}
+
+.report-body { max-width:660px; margin:0 auto; }
+
+.report-module { margin-bottom:48px; }
+.module-header {
+  display:flex; align-items:baseline; gap:14px;
+  padding-bottom:14px; border-bottom:1px solid rgba(212,176,112,.12); margin-bottom:22px;
+}
+.module-num { font-family:'JetBrains Mono',monospace; font-size:9px; color:rgba(212,176,112,.4); letter-spacing:.2em; }
+.module-title { font-size:16px; font-weight:300; letter-spacing:.2em; color:var(--paper); }
+.module-title-en { font-family:'Cormorant Garamond',serif; font-style:italic; font-size:12px; color:rgba(212,176,112,.4); margin-left:auto; letter-spacing:.05em; }
+
+.module-text {
+  font-size:14px; line-height:2.1; color:var(--paper-dim); letter-spacing:.06em;
+  white-space:pre-wrap; word-break:break-word;
+}
+
+.report-closing {
+  text-align:center; padding:48px 24px;
+  border:1px solid rgba(212,176,112,.15); margin-top:48px; position:relative;
+}
+.report-closing::before {
+  content:''; position:absolute; top:-1px; left:-1px;
+  width:18px; height:18px; border-top:1px solid var(--gold); border-left:1px solid var(--gold);
+}
+.report-closing::after {
+  content:''; position:absolute; bottom:-1px; right:-1px;
+  width:18px; height:18px; border-bottom:1px solid var(--gold); border-right:1px solid var(--gold);
+}
+.closing-quote {
+  font-family:'Cormorant Garamond',serif; font-style:italic;
+  font-size:clamp(16px,2.5vw,22px); color:var(--paper); line-height:1.7;
+  letter-spacing:.06em;
+}
+.closing-deco { color:var(--gold); font-size:18px; margin:16px 0 0; }
+
+.report-actions { display:flex; gap:12px; margin-top:32px; flex-wrap:wrap; }
+.report-actions .btn-ghost { flex:1; min-width:140px; text-align:center; }
+.report-actions .btn-primary { flex:2; min-width:160px; margin-top:0; }
+
+/* ── LOADING ── */
+#loading-section { display:none; text-align:center; padding:80px 20px; }
+#loading-section.active { display:block; }
+.loading-ring {
+  width:80px; height:80px; margin:0 auto 32px;
+  border:1px solid rgba(212,176,112,.15);
+  border-top-color:var(--gold); border-radius:50%;
+  animation:spin 2s linear infinite;
+}
+.loading-text { font-size:13px; letter-spacing:.3em; color:var(--paper-dim); margin-bottom:8px; }
+.loading-sub { font-family:'Cormorant Garamond',serif; font-style:italic; font-size:13px; color:rgba(212,176,112,.4); }
+
+/* ── TOAST ── */
+.toast {
+  position:fixed; bottom:32px; left:50%; transform:translateX(-50%) translateY(80px);
+  background:rgba(14,12,10,.95); border:1px solid var(--gold);
+  color:var(--gold); padding:11px 24px; font-size:12px; letter-spacing:.15em;
+  transition:transform .4s cubic-bezier(.2,.9,.3,1); z-index:9990;
+  box-shadow:0 10px 40px rgba(0,0,0,.5);
+}
+.toast.show { transform:translateX(-50%) translateY(0); }
+
+.fade-up { opacity:0; transform:translateY(16px); transition:opacity .6s ease, transform .6s ease; }
+.fade-up.visible { opacity:1; transform:translateY(0); }
+</style>
+</head>
+<body>
+
+<canvas id="starfield"></canvas>
+<div id="cursor"></div>
+<div id="cursor-ring"></div>
+
+<nav>
+  <a href="index.html" class="nav-back" onclick="if(history.length>1){history.back();return false;}">← 返回</a>
+  <div class="nav-title">三维命理画像</div>
+  <div class="nav-step" id="nav-step">01 / 04</div>
+</nav>
+
+<main>
+
+  <!-- PAGE HEADER -->
+  <div class="page-header fade-up">
+    <div class="page-label">01 · TRINITAS NATALIS</div>
+    <div class="page-title">三维命理画像</div>
+    <div class="page-title-en">A portrait drawn from three directions at once</div>
+    <div class="page-divider"><span>◆</span></div>
+  </div>
+
+  <!-- PROGRESS -->
+  <div class="progress-wrap fade-up" id="progress-wrap">
+    <div class="progress-steps">
+      <div class="step-dot active" data-step="1">
+        <div class="step-circle">1</div>
+        <div class="step-label">基本信息</div>
+      </div>
+      <div class="progress-line" style="flex:1;align-self:center;position:relative;height:1px;background:rgba(212,176,112,.12);margin:0 4px;">
+        <div class="progress-fill" id="pf1" style="width:0%"></div>
+      </div>
+      <div class="step-dot" data-step="2">
+        <div class="step-circle">2</div>
+        <div class="step-label">出生信息</div>
+      </div>
+      <div class="progress-line" style="flex:1;align-self:center;position:relative;height:1px;background:rgba(212,176,112,.12);margin:0 4px;">
+        <div class="progress-fill" id="pf2" style="width:0%"></div>
+      </div>
+      <div class="step-dot" data-step="3">
+        <div class="step-circle">3</div>
+        <div class="step-label">印度占星</div>
+      </div>
+      <div class="progress-line" style="flex:1;align-self:center;position:relative;height:1px;background:rgba(212,176,112,.12);margin:0 4px;">
+        <div class="progress-fill" id="pf3" style="width:0%"></div>
+      </div>
+      <div class="step-dot" data-step="4">
+        <div class="step-circle">4</div>
+        <div class="step-label">你的问题</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 1 -->
+  <div class="form-section active" id="step1">
+    <div class="section-card fade-up">
+      <div class="section-card-title">基本信息</div>
+      <div class="field-row">
+        <div class="field">
+          <label>姓名或昵称 <span>*</span></label>
+          <input type="text" id="name" placeholder="你想让我怎么称呼你" />
+        </div>
+        <div class="field">
+          <label>性别 <span>*</span></label>
+          <select id="gender">
+            <option value="女">女</option>
+            <option value="男">男</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label>MBTI <span>*</span> <span style="text-transform:none;font-size:10px;color:var(--paper-dim);letter-spacing:.04em;">（不确定可以填多个，回车添加）</span></label>
+        <div class="mbti-wrap" id="mbti-wrap">
+          <input class="mbti-input" id="mbti-input" placeholder="输入后回车，如 INFJ" maxlength="4" />
+        </div>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn-primary" onclick="goStep(2)">下一步 →</button>
+    </div>
+  </div>
+
+  <!-- STEP 2 -->
+  <div class="form-section" id="step2">
+    <div class="section-card fade-up">
+      <div class="section-card-title">出生信息</div>
+      <div class="field-row">
+        <div class="field">
+          <label>出生日期 <span>*</span></label>
+          <input type="date" id="birth-date" />
+        </div>
+        <div class="field">
+          <label>出生时间 <span>*</span></label>
+          <input type="time" id="birth-time" />
+        </div>
+      </div>
+      <div class="field">
+        <label>出生地点 <span>*</span></label>
+        <div style="display:flex;gap:10px">
+          <input type="text" id="birth-place" placeholder="例：江苏省南京市浦口区" style="flex:1" />
+          <button class="btn-ghost" id="geo-btn" onclick="queryGeo()" style="white-space:nowrap;padding:11px 16px;cursor:none;">查经纬度</button>
+        </div>
+        <div class="field-hint">用于印度占星定位，查询后请确认城市匹配</div>
+        <div class="geo-chip" id="geo-chip"></div>
+      </div>
+
+      <!-- 八字自动推算 -->
+      <div class="bazi-display" id="bazi-display">
+        <div style="font-size:10px;color:var(--gold);letter-spacing:.2em;margin-bottom:12px;">◆ 八字推演</div>
+        <div class="bazi-pillars">
+          <div class="pillar"><div class="p-label">年柱</div><div class="p-gan" id="yg">—</div><div class="p-zhi" id="yz">—</div></div>
+          <div class="pillar"><div class="p-label">月柱</div><div class="p-gan" id="mg">—</div><div class="p-zhi" id="mz">—</div></div>
+          <div class="pillar"><div class="p-label">日柱</div><div class="p-gan day" id="dg">—</div><div class="p-zhi" id="dz">—</div></div>
+          <div class="pillar"><div class="p-label">时柱</div><div class="p-gan" id="hg">—</div><div class="p-zhi" id="hz">—</div></div>
+        </div>
+        <div class="bazi-meta">
+          <span>日元 <span class="dm" id="dm-display">—</span></span>
+          <span id="bazi-note" style="font-size:10px">自动推演 · 可手动修正</span>
+        </div>
+        <div style="margin-top:14px;padding-top:12px;border-top:1px dashed rgba(212,176,112,.12);">
+          <button class="btn-ghost" id="manual-toggle" onclick="toggleManual()" style="padding:8px 16px;font-size:11px;letter-spacing:.15em;cursor:none;">手动修正八字 ▾</button>
+          <div id="manual-fields" style="display:none;margin-top:12px;display:none;">
+            <div class="field-row" style="grid-template-columns:repeat(4,1fr) 1fr;gap:8px;">
+              <input type="text" id="m-year" placeholder="年柱" maxlength="2" style="text-align:center;padding:8px 4px;font-size:13px;" />
+              <input type="text" id="m-month" placeholder="月柱" maxlength="2" style="text-align:center;padding:8px 4px;font-size:13px;" />
+              <input type="text" id="m-day" placeholder="日柱" maxlength="2" style="text-align:center;padding:8px 4px;font-size:13px;" />
+              <input type="text" id="m-hour" placeholder="时柱" maxlength="2" style="text-align:center;padding:8px 4px;font-size:13px;" />
+              <input type="text" id="m-dm" placeholder="日元" maxlength="1" style="text-align:center;padding:8px 4px;font-size:13px;" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn-ghost" onclick="goStep(1)">← 上一步</button>
+      <button class="btn-primary" onclick="goStep(3)">下一步 → 印度占星</button>
+    </div>
+  </div>
+
+  <!-- STEP 3：印度占星排盘 -->
+  <div class="form-section" id="step3">
+    <div class="section-card fade-up">
+      <div class="section-card-title">印度占星排盘</div>
+
+      <!-- 自动排盘展示区 -->
+      <div id="vedic-loading" style="text-align:center;padding:32px 0;display:none;">
+        <div style="width:48px;height:48px;margin:0 auto 16px;border:1px solid rgba(212,176,112,.2);border-top-color:var(--gold);border-radius:50%;animation:spin 1.5s linear infinite;"></div>
+        <div style="font-size:12px;letter-spacing:.25em;color:var(--paper-dim);">正在计算行星位置</div>
+        <div style="font-family:'Cormorant Garamond',serif;font-style:italic;font-size:12px;color:rgba(212,176,112,.4);margin-top:6px;">根据出生时间与经纬度推演中…</div>
+      </div>
+
+      <div id="vedic-board" style="display:none;">
+        <!-- 基础信息 -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px;">
+          <div style="background:rgba(14,12,10,.6);border:1px solid rgba(212,176,112,.12);padding:14px;">
+            <div style="font-size:9px;letter-spacing:.25em;color:rgba(212,176,112,.5);margin-bottom:8px;">上升星座 · LAGNA</div>
+            <div style="font-size:20px;font-weight:300;color:var(--paper)" id="v-lagna">—</div>
+            <div style="font-size:11px;color:var(--paper-dim);margin-top:4px" id="v-lagna-deg">—</div>
+          </div>
+          <div style="background:rgba(14,12,10,.6);border:1px solid rgba(212,176,112,.12);padding:14px;">
+            <div style="font-size:9px;letter-spacing:.25em;color:rgba(212,176,112,.5);margin-bottom:8px;">月亮星座 · MOON</div>
+            <div style="font-size:20px;font-weight:300;color:var(--paper)" id="v-moon">—</div>
+            <div style="font-size:11px;color:var(--paper-dim);margin-top:4px" id="v-moon-nak">—</div>
+          </div>
+        </div>
+
+        <!-- 行星位置表 -->
+        <div style="font-size:10px;letter-spacing:.2em;color:var(--gold);margin-bottom:12px;">◆ 行星位置</div>
+        <div id="v-planets" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px;margin-bottom:20px;"></div>
+
+        <!-- Vimsottari 大运 -->
+        <div style="font-size:10px;letter-spacing:.2em;color:var(--gold);margin-bottom:12px;">◆ 当前大运 · Vimsottari Dasa</div>
+        <div id="v-dasa" style="background:rgba(14,12,10,.6);border:1px solid rgba(212,176,112,.12);padding:14px;">
+          <div style="font-size:13px;color:var(--paper)" id="v-dasa-main">—</div>
+          <div style="font-size:11px;color:var(--paper-dim);margin-top:6px" id="v-dasa-sub">—</div>
+        </div>
+
+        <!-- 五行/能量提示 -->
+        <div style="margin-top:16px;padding:14px;background:rgba(212,176,112,.04);border-left:2px solid var(--gold);">
+          <div style="font-size:11px;color:var(--paper-dim);line-height:1.9" id="v-summary">根据你的出生信息自动推演，以上为简化版印度占星排盘。完整分析将在报告中三维交叉呈现。</div>
+        </div>
+      </div>
+
+      <!-- 如果计算失败，提示手动确认 -->
+      <div id="vedic-manual" style="display:none;">
+        <div style="padding:20px;background:rgba(212,176,112,.04);border:1px dashed rgba(212,176,112,.2);text-align:center;margin-bottom:16px;">
+          <div style="font-size:13px;color:var(--paper-dim);line-height:1.9;margin-bottom:12px;">自动排盘需要联网计算。<br>如无法加载，报告将基于八字+MBTI两维度生成。</div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:rgba(212,176,112,.5);letter-spacing:.12em;">出生地经纬度已记录 · 可在 Jagannatha Hora 中手动验证</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn-ghost" onclick="goStep(2)">← 上一步</button>
+      <button class="btn-primary" onclick="goStep(4)">下一步 → 填写问题</button>
+    </div>
+  </div>
+
+  <!-- STEP 4：你的问题 -->
+  <div class="form-section" id="step4">
+    <div class="section-card fade-up">
+      <div class="section-card-title">你的问题</div>
+      <div class="field">
+        <label>最想知道的事 <span>*</span></label>
+        <textarea id="want-to-know" placeholder="例：我的事业方向在哪里？我适合什么样的工作？"></textarea>
+      </div>
+      <div class="field">
+        <label>最困惑的事 <span>*</span></label>
+        <textarea id="confusion" placeholder="例：为什么我的感情总是不顺利？"></textarea>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn-ghost" onclick="goStep(3)">← 上一步</button>
+      <button class="btn-primary" id="generate-btn" onclick="generateReport()">生成我的命理画像 ✦</button>
+    </div>
+  </div>
+
+  <!-- LOADING -->
+  <div id="loading-section">
+    <div class="loading-ring"></div>
+    <div class="loading-text" id="loading-text">正在推演三维命盘</div>
+    <div class="loading-sub" id="loading-sub">八字 · 印度占星 · MBTI 交叉分析中…</div>
+  </div>
+
+  <!-- REPORT -->
+  <div id="report-section">
+    <div class="report-header fade-up">
+      <div class="report-name" id="r-name">—</div>
+      <div class="report-subtitle">三维命理画像 · Trinitas Natalis</div>
+      <div class="report-tags" id="r-tags"></div>
+    </div>
+
+    <div class="report-body">
+      <div id="report-modules"></div>
+
+      <div class="report-closing fade-up" id="r-closing" style="display:none">
+        <div class="closing-quote" id="r-quote"></div>
+        <div class="closing-deco">◆</div>
+      </div>
+
+      <div class="report-actions fade-up" style="margin-top:40px">
+        <button class="btn-ghost" onclick="resetForm()">← 重新生成</button>
+        <button class="btn-primary" onclick="window.print()">保存报告 ↓</button>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── STARFIELD ──
+const canvas = document.getElementById('starfield');
+const ctx2 = canvas.getContext('2d');
+let W, H, stars = [], mouse = {x:0,y:0};
+function resize(){ W=canvas.width=window.innerWidth; H=canvas.height=window.innerHeight; }
+function initStars(){
+  stars=[];
+  const n=Math.floor(W*H/4500);
+  for(let i=0;i<n;i++) stars.push({
+    x:Math.random()*W, y:Math.random()*H,
+    r:Math.random()*2+0.3, glow:Math.random()>.75,
+    glowR:Math.random()*22+10, alpha:Math.random()*.7+.2,
+    speed:Math.random()*.12+.02, drift:(Math.random()-.5)*.25,
+    tw:Math.random()*Math.PI*2, tws:Math.random()*.02+.005
+  });
+}
+function drawStars(){
+  ctx2.clearRect(0,0,W,H);
+  const mx=mouse.x/W-.5, my=mouse.y/H-.5;
+  stars.forEach(s=>{
+    s.tw+=s.tws;
+    const a=s.alpha*(.65+.35*Math.sin(s.tw));
+    if(s.glow){
+      const g=ctx2.createRadialGradient(s.x,s.y,0,s.x,s.y,s.glowR);
+      g.addColorStop(0,`rgba(212,176,112,${a*.5})`);
+      g.addColorStop(1,'rgba(212,176,112,0)');
+      ctx2.fillStyle=g;
+      ctx2.beginPath(); ctx2.arc(s.x,s.y,s.glowR,0,Math.PI*2); ctx2.fill();
+    }
+    ctx2.beginPath(); ctx2.arc(s.x,s.y,s.r,0,Math.PI*2);
+    ctx2.fillStyle=`rgba(248,240,224,${a})`; ctx2.fill();
+    s.x+=s.drift+mx*s.speed*2; s.y-=s.speed+my*s.speed*2;
+    if(s.y<-5)s.y=H+5; if(s.x<-5)s.x=W+5; if(s.x>W+5)s.x=-5;
+  });
+  requestAnimationFrame(drawStars);
+}
+resize(); initStars(); drawStars();
+window.addEventListener('resize',()=>{resize();initStars();});
+
+// ── CURSOR ──
+const cur=document.getElementById('cursor'), ring=document.getElementById('cursor-ring');
+let cx=0,cy=0,rx=0,ry=0;
+const isTouchDevice='ontouchstart' in window||navigator.maxTouchPoints>0;
+if(!isTouchDevice){
+  document.addEventListener('mousemove',e=>{cx=e.clientX;cy=e.clientY;mouse.x=e.clientX;mouse.y=e.clientY;});
+  function animCursor(){ rx+=(cx-rx)*.12; ry+=(cy-ry)*.12; cur.style.left=cx+'px'; cur.style.top=cy+'px'; ring.style.left=rx+'px'; ring.style.top=ry+'px'; requestAnimationFrame(animCursor); }
+  animCursor();
+  document.querySelectorAll('a,button,input,select,textarea').forEach(el=>{
+    el.addEventListener('mouseenter',()=>{cur.style.width='12px';cur.style.height='12px';ring.style.width='48px';ring.style.height='48px';});
+    el.addEventListener('mouseleave',()=>{cur.style.width='8px';cur.style.height='8px';ring.style.width='32px';ring.style.height='32px';});
+  });
+} else {
+  document.body.style.cursor='auto';
+  if(cur) cur.style.display='none';
+  if(ring) ring.style.display='none';
+}
+document.addEventListener('click',e=>{ const r=document.createElement('div'); r.className='ripple'; r.style.left=e.clientX+'px'; r.style.top=e.clientY+'px'; document.body.appendChild(r); setTimeout(()=>r.remove(),800); });
+
+// ── TOAST ──
+function toast(msg,dur=2400){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),dur); }
+
+// ── FADE IN ──
+const obs=new IntersectionObserver(entries=>{ entries.forEach(e=>{ if(e.isIntersecting){e.target.classList.add('visible');obs.unobserve(e.target);} }); },{threshold:.1});
+document.querySelectorAll('.fade-up').forEach(el=>obs.observe(el));
+
+// ── BAZI ALGORITHM ──
+const TG=['甲','乙','丙','丁','戊','己','庚','辛','壬','癸'];
+const DZ=['子','丑','寅','卯','辰','巳','午','未','申','酉','戌','亥'];
+const WX={'甲':'木','乙':'木','丙':'火','丁':'火','戊':'土','己':'土','庚':'金','辛':'金','壬':'水','癸':'水'};
+const JQDAYS=[{m:2,d:4},{m:3,d:6},{m:4,d:5},{m:5,d:6},{m:6,d:6},{m:7,d:7},{m:8,d:8},{m:9,d:8},{m:10,d:8},{m:11,d:7},{m:12,d:7},{m:1,d:6}];
+const ZHI_ORDER=['寅','卯','辰','巳','午','未','申','酉','戌','亥','子','丑'];
+
+function getLichun(y){ const base=[3.87,4.15,4.44,4.72,5.00]; const idx=y<1900?0:y<1950?1:y<2000?2:y<2050?3:4; const yy=y%100; return new Date(y,1,Math.floor(base[idx]+0.2422*yy-Math.floor(yy/4)),10,30); }
+
+function getMonthZhi(date){
+  const m=date.getMonth()+1, d=date.getDate();
+  if(m===1) return d>=6?'丑':'子';
+  const jq=JQDAYS[m-2]; if(!jq) return '寅';
+  let idx=d>=jq.d?m-2:m-3;
+  if(idx<0)idx=11;
+  return ZHI_ORDER[idx];
+}
+
+function getMonthGan(yg,mz){
+  const rules={'甲':'丙','己':'丙','乙':'戊','庚':'戊','丙':'庚','辛':'庚','丁':'壬','壬':'壬','戊':'甲','癸':'甲'};
+  const start=rules[yg], si=TG.indexOf(start), oi=ZHI_ORDER.indexOf(mz);
+  return TG[(si+oi)%10];
+}
+
+function getDayGZ(date){
+  const base=new Date(1900,0,1);
+  const diff=Math.floor((date-base)/(864e5));
+  let idx=(10+diff)%60; if(idx<0)idx+=60;
+  return {gan:TG[idx%10],zhi:DZ[idx%12]};
+}
+
+function getHourGZ(dg,h){
+  let zi=h===23||h===0?0:Math.floor((h+1)/2)%12;
+  const rules={'甲':'甲','己':'甲','乙':'丙','庚':'丙','丙':'戊','辛':'戊','丁':'庚','壬':'庚','戊':'壬','癸':'壬'};
+  const si=TG.indexOf(rules[dg]);
+  return {gan:TG[(si+zi)%10],zhi:DZ[zi]};
+}
+
+function calcBazi(dateStr,timeStr){
+  if(!dateStr||!timeStr) return null;
+  const [y,m,d]=dateStr.split('-').map(Number);
+  const [h,mn]=timeStr.split(':').map(Number);
+  const date=new Date(y,m-1,d,h,mn);
+  let yy=y; if(date<getLichun(y)) yy=y-1;
+  let off=(yy-1984)%60; if(off<0)off+=60;
+  const ygan=TG[off%10], yzhi=DZ[off%12];
+  const mzhi=getMonthZhi(date), mgan=getMonthGan(ygan,mzhi);
+  let dd=new Date(date); if(h===23) dd.setDate(dd.getDate()+1);
+  const {gan:dgan,zhi:dzhi}=getDayGZ(dd);
+  const {gan:hgan,zhi:hzhi}=getHourGZ(dgan,h);
+  return {year:ygan+yzhi,month:mgan+mzhi,day:dgan+dzhi,hour:hgan+hzhi,dm:dgan,wx:WX[dgan]};
+}
+
+let manualMode=false;
+const state={geo:null, mbtiList:[]};
+
+function renderBazi(){
+  const bz=getEffectiveBazi();
+  const disp=document.getElementById('bazi-display');
+  if(!bz){disp.classList.remove('active');return;}
+  disp.classList.add('active');
+  document.getElementById('yg').textContent=bz.year[0]||'—';
+  document.getElementById('yz').textContent=bz.year[1]||'—';
+  document.getElementById('mg').textContent=bz.month[0]||'—';
+  document.getElementById('mz').textContent=bz.month[1]||'—';
+  document.getElementById('dg').textContent=bz.day[0]||'—';
+  document.getElementById('dz').textContent=bz.day[1]||'—';
+  document.getElementById('hg').textContent=bz.hour[0]||'—';
+  document.getElementById('hz').textContent=bz.hour[1]||'—';
+  document.getElementById('dm-display').textContent=bz.dm+(bz.wx?`（${bz.wx}）`:'');
+  document.getElementById('bazi-note').textContent=manualMode?'✦ 已手动修正':'自动推演 · 可手动修正';
+}
+
+function getEffectiveBazi(){
+  const auto=calcBazi(document.getElementById('birth-date').value, document.getElementById('birth-time').value);
+  if(!manualMode) return auto;
+  const mY=document.getElementById('m-year').value.trim();
+  const mM=document.getElementById('m-month').value.trim();
+  const mD=document.getElementById('m-day').value.trim();
+  const mH=document.getElementById('m-hour').value.trim();
+  const mDm=document.getElementById('m-dm').value.trim();
+  if(mY&&mM&&mD&&mH) return {year:mY,month:mM,day:mD,hour:mH,dm:mDm||(mD[0]||'—'),wx:WX[mDm||mD[0]]||'—'};
+  return auto;
+}
+
+function toggleManual(){
+  manualMode=!manualMode;
+  const f=document.getElementById('manual-fields');
+  f.style.display=manualMode?'block':'none';
+  document.getElementById('manual-toggle').textContent=manualMode?'收起手动修正 ▴':'手动修正八字 ▾';
+  renderBazi();
+}
+
+// Auto-update bazi
+['birth-date','birth-time','m-year','m-month','m-day','m-hour','m-dm'].forEach(id=>{
+  const el=document.getElementById(id);
+  if(el) el.addEventListener('input',renderBazi);
+});
+
+// MBTI
+function renderMbtiTags(){
+  const wrap=document.getElementById('mbti-wrap'), inp=document.getElementById('mbti-input');
+  wrap.querySelectorAll('.mbti-tag').forEach(t=>t.remove());
+  state.mbtiList.forEach((v,i)=>{
+    const tag=document.createElement('span'); tag.className='mbti-tag';
+    tag.innerHTML=`${v}<button type="button" data-i="${i}">✕</button>`;
+    wrap.insertBefore(tag,inp);
+  });
+  wrap.querySelectorAll('.mbti-tag button').forEach(btn=>{
+    btn.addEventListener('click',()=>{ state.mbtiList.splice(parseInt(btn.dataset.i),1); renderMbtiTags(); });
+  });
+}
+function addMbti(v){
+  v=v.trim().toUpperCase();
+  if(!v) return;
+  if(!/^[EI][NS][TF][JP]$/.test(v)){toast('MBTI 格式不正确，例：INFJ');return;}
+  if(state.mbtiList.includes(v)){toast('已添加');return;}
+  state.mbtiList.push(v); renderMbtiTags();
+}
+const mbtiInp=document.getElementById('mbti-input');
+mbtiInp.addEventListener('keydown',e=>{
+  if(e.key==='Enter'||e.key===','||e.key===' '){e.preventDefault();addMbti(mbtiInp.value);mbtiInp.value='';}
+  else if(e.key==='Backspace'&&!mbtiInp.value&&state.mbtiList.length>0){state.mbtiList.pop();renderMbtiTags();}
+});
+mbtiInp.addEventListener('blur',()=>{if(mbtiInp.value.trim()){addMbti(mbtiInp.value);mbtiInp.value='';}});
+document.getElementById('mbti-wrap').addEventListener('click',e=>{ if(e.target.id==='mbti-wrap'||e.target===document.getElementById('mbti-wrap')) mbtiInp.focus(); });
+
+// GEO
+async function queryGeo(){
+  const place=document.getElementById('birth-place').value.trim();
+  const chip=document.getElementById('geo-chip');
+  const btn=document.getElementById('geo-btn');
+  if(!place){toast('请先填写出生地点');return;}
+  btn.disabled=true; btn.innerHTML='<span class="spinner"></span>查询中';
+  chip.className='geo-chip';
+  try{
+    const res=await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(place)}&format=json&limit=1&accept-language=zh-CN`,{headers:{'User-Agent':'SanweiMingli/1.0'}});
+    const data=await res.json();
+    if(data&&data.length>0){
+      state.geo={name:data[0].display_name,lat:parseFloat(data[0].lat).toFixed(4),lon:parseFloat(data[0].lon).toFixed(4)};
+      chip.className='geo-chip active';
+      chip.innerHTML=`<div class="addr">${state.geo.name}</div><div class="coord">LAT ${state.geo.lat} · LON ${state.geo.lon}</div>`;
+      toast('经纬度已定位');
+    } else {
+      state.geo=null; chip.className='geo-chip active error';
+      chip.innerHTML='<div>未找到，请换个写法（可加省市，或用英文）</div>';
+    }
+  }catch(e){ state.geo=null; chip.className='geo-chip active error'; chip.innerHTML='<div>查询失败，请检查网络</div>'; }
+  btn.disabled=false; btn.textContent='查经纬度';
+}
+
+// ── 印度占星：调用 Vercel 后端 ──
+// 部署完 Vercel 后把下面这个地址换成你自己的
+const VEDIC_API_URL = 'https://withered-unit-4706.jj632274843.workers.dev';
+
+const PLANET_NAMES_ZH = {
+  sun:'太阳', moon:'月亮', mars:'火星', mercury:'水星',
+  jupiter:'木星', venus:'金星', saturn:'土星', rahu:'罗睺', ketu:'计都'
+};
+const SIGN_NAMES_ZH = {
+  'Aries':'白羊','Taurus':'金牛','Gemini':'双子','Cancer':'巨蟹',
+  'Leo':'狮子','Virgo':'处女','Libra':'天秤','Scorpio':'天蝎',
+  'Sagittarius':'射手','Capricorn':'摩羯','Aquarius':'水瓶','Pisces':'双鱼',
+  'Mesha':'白羊','Vrishabha':'金牛','Mithuna':'双子','Karka':'巨蟹',
+  'Simha':'狮子','Kanya':'处女','Tula':'天秤','Vrishchika':'天蝎',
+  'Dhanu':'射手','Makara':'摩羯','Kumbha':'水瓶','Meena':'双鱼'
+};
+
+function signZh(name){ return SIGN_NAMES_ZH[name] || name || '—'; }
+
+async function computeVedic(){
+  const dateStr = document.getElementById('birth-date').value;
+  const timeStr = document.getElementById('birth-time').value;
+  const geo = state.geo;
+
+  document.getElementById('vedic-loading').style.display='block';
+  document.getElementById('vedic-board').style.display='none';
+  document.getElementById('vedic-manual').style.display='none';
+
+  // 同时展示八字五行（本地算，始终准确）
+  const bz = getEffectiveBazi();
+  const WX_MAP={
+    '甲':'木','乙':'木','丙':'火','丁':'火','戊':'土','己':'土',
+    '庚':'金','辛':'金','壬':'水','癸':'水',
+    '子':'水','丑':'土','寅':'木','卯':'木','辰':'土','巳':'火',
+    '午':'火','未':'土','申':'金','酉':'金','戌':'土','亥':'水'
+  };
+  const WX_COLOR={'木':'#5a8a5a','火':'#a04040','土':'#9a7840','金':'#b8a060','水':'#4070a0'};
+  let wxCount={木:0,火:0,土:0,金:0,水:0};
+  if(bz){
+    [bz.year,bz.month,bz.day,bz.hour].forEach(p=>{
+      [p[0],p[1]].forEach(c=>{ if(WX_MAP[c]) wxCount[WX_MAP[c]]++; });
+    });
+  }
+  const wxTotal = Object.values(wxCount).reduce((a,b)=>a+b,0)||1;
+  const wxBars = Object.entries(wxCount).map(([k,v])=>`
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+      <div style="font-size:12px;color:${WX_COLOR[k]};width:20px;text-align:center;">${k}</div>
+      <div style="flex:1;height:6px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden;">
+        <div style="height:100%;width:${Math.round(v/wxTotal*100)}%;background:${WX_COLOR[k]};border-radius:3px;"></div>
+      </div>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--paper-dim);width:16px;">${v}</div>
+    </div>`).join('');
+
+  // 尝试调用 Prokerala API
+  let vedicHtml = '';
+  let vedicTextForReport = '';
+
+  try {
+    if(!dateStr || !timeStr) throw new Error('出生日期时间不完整');
+    if(!geo) throw new Error('请先查询出生地经纬度');
+    if(!VEDIC_API_URL || VEDIC_API_URL === 'YOUR_VERCEL_URL_HERE') throw new Error('Vercel后端未配置');
+
+    // 构造datetime（ISO格式，转UTC）
+    const localDt = `${dateStr}T${timeStr}:00`;
+    const timezone = '+08:00';
+
+    const res = await fetch(`${VEDIC_API_URL}/api/vedic`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        datetime: localDt,
+        latitude: geo.lat,
+        longitude: geo.lon,
+        timezone
+      })
+    });
+
+    if(!res.ok) throw new Error(`API响应错误 ${res.status}`);
+    const data = await res.json();
+    if(!data.success) throw new Error(data.error || 'API返回失败');
+
+    // 解析行星数据 - Prokerala返回结构：planet_position[].rasi.name
+    const allPlanets = data.planets?.planet_position || [];
+    // 过滤掉Ascendant，只保留真实行星
+    const planets = allPlanets.filter(p => p.name?.toLowerCase() !== 'ascendant');
+    
+    // 上升星座：优先从planet_position里找Ascendant，或从kundli里找
+    const ascendantP = allPlanets.find(p => p.name?.toLowerCase() === 'ascendant');
+    const lagnaRasi = ascendantP?.rasi?.name 
+      || data.kundli?.ascendant?.rasi?.name 
+      || data.kundli?.ascendant?.sign
+      || data.kundli?.ascendant?.name
+      || '';
+    const lagnaDeg = (ascendantP?.degree || ascendantP?.longitude || data.kundli?.ascendant?.degree || 0).toFixed(1);
+
+    // 大运：dasha_periods 数组，每项的 planet.name
+    const dashaList = data.dasha?.dasha_periods || data.dasha?.mahadasha || [];
+    state.vedic = { raw: data, planets, lagnaRasi, lagnaDeg, dashaList };
+
+    const lagnaSign = signZh(lagnaRasi);
+    const lagnaLord = `${lagnaDeg}°`;
+
+    // 月亮
+    const moonP = planets.find(p => p.name?.toLowerCase() === 'moon');
+    const moonSign = moonP ? signZh(moonP.rasi?.name || '') : '—';
+    const moonNak = moonP?.nakshatra?.name || moonP?.nakshatra || '—';
+
+    // 当前大运 - 找当前时间所在的大运
+    const now = new Date();
+    const currentDasha = dashaList.find(d => {
+      const start = d.start ? new Date(d.start) : null;
+      const end = d.end ? new Date(d.end) : null;
+      return start && end && now >= start && now <= end;
+    }) || dashaList[0];
+
+    const dashaText = currentDasha
+      ? `${currentDasha.planet?.name || currentDasha.planet?.vedic_name || currentDasha.planet || '—'} 大运 · ${(currentDasha.start||'').slice(0,10)} → ${(currentDasha.end||'').slice(0,10)}`
+      : '大运数据加载中';
+
+    // 行星卡片
+    const planetGrid = planets.map(p => {
+      const signName = signZh(p.rasi?.name || p.sign || '');
+      const pNameZh = PLANET_NAMES_ZH[p.name?.toLowerCase()] || p.name || '';
+      const deg = (p.degree || 0).toFixed(1);
+      const nak = p.nakshatra?.name || p.nakshatra || '';
+      return `
+      <div style="background:rgba(14,12,10,.6);border:1px solid rgba(212,176,112,.1);padding:10px 12px;">
+        <div style="font-size:9px;letter-spacing:.15em;color:rgba(212,176,112,.45);margin-bottom:4px;">${pNameZh}</div>
+        <div style="font-size:14px;color:var(--paper)">${signName}</div>
+        <div style="font-size:10px;color:var(--paper-dim)">${deg}°${nak?' · '+nak:''}${p.is_retrograde?' ℞':''}</div>
+      </div>`;
+    }).join('');
+
+    // 给Claude的文字摘要
+    const planetSummary = planets.map(p =>
+      `${PLANET_NAMES_ZH[p.name?.toLowerCase()]||p.name}在${signZh(p.rasi?.name||'')}(${(p.degree||0).toFixed(1)}°)${p.is_retrograde?'逆行':''}`
+    ).join('，');
+
+    vedicTextForReport = `上升星座：${lagnaSign}（${lagnaLord}）\n行星位置：${planetSummary}\n月亮星宿：${moonNak}\n当前大运：${dashaText}`;
+
+    state.vedic.reportText = vedicTextForReport;
+
+    vedicHtml = `
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px;">
+        <div style="background:rgba(14,12,10,.6);border:1px solid rgba(212,176,112,.18);padding:16px;">
+          <div style="font-size:9px;letter-spacing:.25em;color:rgba(212,176,112,.5);margin-bottom:8px;">上升星座 · LAGNA</div>
+          <div style="font-size:22px;font-weight:300;color:var(--paper)">${lagnaSign}</div>
+          <div style="font-size:11px;color:var(--paper-dim);margin-top:4px">${lagnaLord}</div>
+        </div>
+        <div style="background:rgba(14,12,10,.6);border:1px solid rgba(212,176,112,.18);padding:16px;">
+          <div style="font-size:9px;letter-spacing:.25em;color:rgba(212,176,112,.5);margin-bottom:8px;">月亮星座 · MOON</div>
+          <div style="font-size:22px;font-weight:300;color:var(--paper)">${moonSign}</div>
+          <div style="font-size:11px;color:var(--paper-dim);margin-top:4px">${moonNak}</div>
+        </div>
+      </div>
+      <div style="font-size:10px;letter-spacing:.2em;color:var(--gold);margin-bottom:12px;">◆ 行星位置 · Graha</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-bottom:20px;">${planetGrid}</div>
+      <div style="font-size:10px;letter-spacing:.2em;color:var(--gold);margin-bottom:12px;">◆ Vimsottari 大运</div>
+      <div style="background:rgba(14,12,10,.6);border:1px solid rgba(212,176,112,.12);padding:14px;margin-bottom:16px;">
+        <div style="font-size:13px;color:var(--paper)">${dashaText}</div>
+        ${dashaList.slice(0,5).map(d=>{const pn=d.planet?.name||d.planet?.vedic_name||d.planet||'—';return `<div style="font-size:11px;color:var(--paper-dim);margin-top:6px;">${pn} · ${(d.start||'').slice(0,7)} → ${(d.end||'').slice(0,7)}</div>`;}).join('')}
+      </div>
+      <div style="padding:14px;background:rgba(212,176,112,.04);border-left:2px solid var(--gold);">
+        <div style="font-size:11px;color:var(--paper-dim);line-height:1.9;letter-spacing:.04em;">
+          ✦ 以上为 Prokerala 专业星历引擎计算的真实印度占星盘，将与八字、MBTI三维交叉分析。
+        </div>
+      </div>`;
+
+  } catch(err) {
+    console.warn('Vedic API:', err.message);
+    // 降级：只显示八字五行+地理信息
+    const geoText = geo ? `LAT ${geo.lat} · LON ${geo.lon}` : '未查询经纬度';
+    const errMsg = VEDIC_API_URL === 'YOUR_VERCEL_URL_HERE'
+      ? '后端服务未部署，报告将基于八字+MBTI两维生成'
+      : err.message;
+
+    vedicTextForReport = '';
+    state.vedic = { reportText: '' };
+
+    vedicHtml = `
+      <div style="padding:16px;background:rgba(139,58,53,.08);border:1px dashed rgba(139,58,53,.3);margin-bottom:16px;text-align:center;">
+        <div style="font-size:12px;color:rgba(248,240,224,.5);line-height:1.9;">${errMsg}<br>
+        <span style="font-size:10px;color:rgba(212,176,112,.4);">出生地坐标：${geoText}</span></div>
+      </div>`;
+  }
+
+  // 无论成功还是失败，都显示八字五行
+  document.getElementById('vedic-board').innerHTML = `
+    <div style="margin-bottom:20px;">
+      <div style="font-size:10px;letter-spacing:.2em;color:var(--gold);margin-bottom:14px;">◆ 八字五行分布</div>
+      <div style="background:rgba(14,12,10,.6);border:1px solid rgba(212,176,112,.12);padding:18px 20px;">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--paper-dim);letter-spacing:.1em;margin-bottom:16px;">
+          ${bz ? `${bz.year} ${bz.month} ${bz.day} ${bz.hour} · 日元${bz.dm}` : '八字计算中'}
+        </div>${wxBars}
+      </div>
+    </div>
+    <div style="margin-bottom:20px;">
+      <div style="font-size:10px;letter-spacing:.2em;color:var(--gold);margin-bottom:14px;">◆ 印度占星盘 · Jyotish</div>
+      ${vedicHtml}
+    </div>`;
+
+  document.getElementById('vedic-loading').style.display='none';
+  document.getElementById('vedic-board').style.display='block';
+}
+
+// STEP NAV
+let currentStep=1;
+const TOTAL_STEPS=4;
+
+function goStep(n){
+  if(n>1){
+    const name=document.getElementById('name').value.trim();
+    if(!name){toast('请填写姓名或昵称');return;}
+  }
+  if(n>2){
+    const bd=document.getElementById('birth-date').value;
+    const bt=document.getElementById('birth-time').value;
+    const bp=document.getElementById('birth-place').value.trim();
+    if(!bd||!bt||!bp){toast('请填写完整的出生信息');return;}
+  }
+  // 注意：第4步（你的问题）的验证只在generateReport里做，不在跳转时做
+
+  document.getElementById(`step${currentStep}`).classList.remove('active');
+  document.getElementById(`step${n}`).classList.add('active');
+  currentStep=n;
+  document.getElementById('nav-step').textContent=`0${n} / 0${TOTAL_STEPS}`;
+
+  [1,2,3].forEach(i=>{
+    document.getElementById(`pf${i}`).style.width=n>i?'100%':'0%';
+  });
+  document.querySelectorAll('.step-dot').forEach(d=>{
+    const s=parseInt(d.dataset.step);
+    d.classList.toggle('active',s===n);
+    d.classList.toggle('done',s<n);
+  });
+
+  if(n===3) computeVedic();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// GENERATE
+async function generateReport(){
+  const name=document.getElementById('name').value.trim();
+  const gender=document.getElementById('gender').value;
+  const wantToKnow=document.getElementById('want-to-know').value.trim();
+  const confusion=document.getElementById('confusion').value.trim();
+  if(!wantToKnow||!confusion){toast('请填写你的问题');return;}
+
+  const pendingMbti=document.getElementById('mbti-input').value.trim().toUpperCase();
+  const mbtiArr=[...state.mbtiList];
+  if(pendingMbti&&/^[EI][NS][TF][JP]$/.test(pendingMbti)&&!mbtiArr.includes(pendingMbti)) mbtiArr.push(pendingMbti);
+
+  const bz=getEffectiveBazi();
+  const baziStr=bz?`${bz.year}${bz.month}${bz.day}${bz.hour}`:'[未知]';
+  const dm=bz?bz.dm:'[未知]';
+  const mbtiStr=mbtiArr.length===0?'[未填写]':mbtiArr.join('、');
+  const sub=gender==='女'?'她':'他';
+
+  // 印度占星数据
+  let vedicText = state.vedic?.reportText || '';
+  if(!vedicText && state.vedic?.planets?.length > 0){
+    const planets = state.vedic.planets || [];
+    const lagnaSign = state.vedic.lagnaRasi ? (SIGN_NAMES_ZH[state.vedic.lagnaRasi] || state.vedic.lagnaRasi) : '—';
+    const moonP = planets.find(p=>p.name?.toLowerCase()==='moon');
+    const moonNak = moonP?.nakshatra?.name || '—';
+    const dashaList = state.vedic.dashaList || [];
+    const now = new Date();
+    const currentDasha = dashaList.find(d=>{
+      const s=d.start?new Date(d.start):null, e=d.end?new Date(d.end):null;
+      return s&&e&&now>=s&&now<=e;
+    }) || dashaList[0];
+    const dashaText = currentDasha
+      ? `${currentDasha.planet?.name||currentDasha.planet||'—'}大运 ${(currentDasha.start||'').slice(0,10)} → ${(currentDasha.end||'').slice(0,10)}`
+      : '大运数据未能加载';
+    const planetSummary = planets
+      .filter(p=>p.name?.toLowerCase()!=='ascendant')
+      .map(p=>`${PLANET_NAMES_ZH[p.name?.toLowerCase()]||p.name}在${signZh(p.rasi?.name||'')}(${(p.degree||0).toFixed(1)}°)${p.is_retrograde?'逆行':''}`)
+      .join('，');
+    vedicText = `上升星座：${lagnaSign}（${state.vedic.lagnaDeg||''}）\n行星位置：${planetSummary}\n月亮星宿：${moonNak}\n当前大运：${dashaText}`;
+    state.vedic.reportText = vedicText;
+  }
+  if(!vedicText){
+    vedicText = '（印度占星数据未能加载，报告将基于八字与MBTI两维分析）';
+  }
+  console.log('【调试】印度占星数据：', vedicText.slice(0, 200));
+  console.log('【调试】MBTI：', mbtiStr, '八字：', baziStr);
+
+  document.getElementById(`step${currentStep}`).classList.remove('active');
+  document.getElementById('progress-wrap').style.display='none';
+  const loading=document.getElementById('loading-section');
+  loading.classList.add('active');
+
+  const loadingTexts=[
+    ['正在推演三维命盘','八字 · 印度占星 · MBTI 交叉分析中…'],
+    ['解读人格底色','从三个维度观察你的命运底牌…'],
+    ['梳理运势走向','2026 — 2030 大运推演中…'],
+    ['生成专属画像','最后的润色，马上就好…'],
+  ];
+  let li=0;
+  const lt=setInterval(()=>{
+    li=(li+1)%loadingTexts.length;
+    document.getElementById('loading-text').textContent=loadingTexts[li][0];
+    document.getElementById('loading-sub').textContent=loadingTexts[li][1];
+  },3000);
+
+  const prompt=`你是一位融合传统命理学与现代心理学的分析师。
+
+此人为${gender}性，MBTI是${mbtiStr}，八字是${baziStr}，日元是${dm}，一定不要搞错，请根据八字、MBTI，以及印度占星，综合三个维度分析此人。
+
+印度占星数据如下：
+${vedicText}
+
+请完成：
+三维度交叉验证——找出高度吻合的特质（强化置信度）
+找出三维度的差异点（提供辩证视角）
+
+综合输出以下模块：
+【你是谁】核心人格画像（600字）
+【外貌与气质】形体特征描述（300字，用于验证）
+【过往印记】2026年以前的成长经历回溯（500字，用于验证）
+【感情密码】（400字）
+【事业方向】（400字）
+【财富模式】（400字）
+【健康警示】（300字）
+【2026年-2030年运势】（500字）
+【给你的一句话】（50字金句收尾）
+
+${sub}最想知道：${wantToKnow}
+${sub}的困惑：${confusion}
+
+写作风格：温暖、有力量、像一位懂你的智者在说话，避免玄学腔调，使用现代心理语言包装。
+
+重要：请严格按照上面的模块格式输出，每个模块标题用【】包裹，金句单独一行用引号括起来。`;
+
+  window._lastPrompt=prompt;
+
+  try{
+    const res=await fetch(`${VEDIC_API_URL}/api/report`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({ prompt })
+    });
+    clearInterval(lt);
+    loading.classList.remove('active');
+    if(!res.ok) throw new Error('请求失败 '+res.status);
+    const data=await res.json();
+    if(!data.success) throw new Error(data.error||'生成失败');
+    renderReport(name,gender,mbtiStr,baziStr,dm,data.text);
+  } catch(err){
+    clearInterval(lt);
+    loading.classList.remove('active');
+    renderReport(name,gender,mbtiStr,baziStr,dm,null);
+  }
+}
+
+
+function renderReport(name,gender,mbtiStr,baziStr,dm,rawText){
+  document.getElementById('r-name').textContent=name||'你的';
+  document.getElementById('r-tags').innerHTML=[
+    `八字 ${baziStr}`, `日元 ${dm}`, `MBTI ${mbtiStr}`, gender==='女'?'女命':'男命'
+  ].map(t=>`<span class="report-tag">${t}</span>`).join('');
+
+
+  const modules=[];
+  let closing='';
+
+  if(rawText){
+    const moduleNames=[
+      {key:'你是谁',en:'Who You Are'},
+      {key:'外貌与气质',en:'Appearance & Aura'},
+      {key:'过往印记',en:'Past Imprints'},
+      {key:'感情密码',en:'Love Code'},
+      {key:'事业方向',en:'Career Path'},
+      {key:'财富模式',en:'Wealth Pattern'},
+      {key:'健康警示',en:'Health Notes'},
+      {key:'2026年-2030年运势',en:'Fortune 2026–2030'},
+    ];
+    moduleNames.forEach((mn,idx)=>{
+      const re=new RegExp(`【${mn.key}】[^【]*?\\n([\\s\\S]*?)(?=【|$)`,'i');
+      let m=rawText.match(re);
+      // 备用匹配：直接取【】后内容
+      if(!m){
+        const re2=new RegExp(`【${mn.key}】([\\s\\S]*?)(?=【|$)`,'i');
+        m=rawText.match(re2);
+      }
+      if(m){
+        // 过滤掉第一行如果是字数说明（如"核心人格画像（600字）"）
+        let text=m[1].trim();
+        const firstLine=text.split('\n')[0].trim();
+        // 如果第一行很短且包含"字"或括号，认为是说明行，去掉
+        if(firstLine.length < 30 && (firstLine.includes('字') || firstLine.includes('（') || firstLine.includes('('))) {
+          text=text.split('\n').slice(1).join('\n').trim();
+        }
+        modules.push({num:`0${idx+1}`,title:`【${mn.key}】`,en:mn.en,text});
+      }
+    });
+    // 提取金句
+    const qm=rawText.match(/[「""「"]([^「""」"]{10,80})[」""」"]/);
+    if(qm) closing=`"${qm[1]}"`;
+    else {
+      const lastModule=rawText.match(/【给你的一句话】([\s\S]*?)$/);
+      if(lastModule){
+        let qt=lastModule[1].trim();
+        // 去掉可能的引号重复
+        qt=qt.replace(/^[「""「"\s]+|[」""」"\s]+$/g,'').trim();
+        if(qt) closing=`"${qt}"`;
+      }
+    }
+  } else {
+    modules.push(
+      {num:'01',title:'【提示】',en:'Notice',text:'报告生成失败，请稍后重试。'},
+    );
+    closing='"每一段探索，都是与自己更深的相遇。"';
+  }
+
+  const container=document.getElementById('report-modules');
+  container.innerHTML='';
+  modules.forEach((m,i)=>{
+    const div=document.createElement('div');
+    div.className='report-module fade-up';
+    div.style.transitionDelay=`${i*0.08}s`;
+    div.innerHTML=`
+      <div class="module-header">
+        <span class="module-num">${m.num}</span>
+        <span class="module-title">${m.title}</span>
+        <span class="module-title-en">${m.en}</span>
+      </div>
+      <div class="module-text">${m.text}</div>`;
+    container.appendChild(div);
+    setTimeout(()=>obs.observe(div),50);
+  });
+
+  if(closing){
+    document.getElementById('r-quote').textContent=closing;
+    document.getElementById('r-closing').style.display='block';
+    setTimeout(()=>obs.observe(document.getElementById('r-closing')),100);
+  }
+
+  document.getElementById('report-section').classList.add('active');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function copyPrompt(){
+  const p=window._lastPrompt||'提示词不存在，请重新生成';
+  navigator.clipboard.writeText(p).then(()=>toast('✦ 提示词已复制，前往 Claude.ai 粘贴使用')).catch(()=>{
+    const ta=document.createElement('textarea'); ta.value=p; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); toast('✦ 已复制');
+  });
+}
+
+function resetForm(){
+  document.getElementById('report-section').classList.remove('active');
+  document.getElementById('progress-wrap').style.display='block';
+  state.vedic=null;
+  currentStep=1;
+  goStep(1);
+}
+</script>
+</body>
+</html>
